@@ -1,5 +1,6 @@
 //var exec = require('exec');
 const execSync = require('child_process').execSync;
+var fs = require('fs');
 var program = require('commander');
 var datetime = new Date();
 
@@ -34,6 +35,13 @@ function calibrate ()
         var sum = noVehicleValues.reduce(function(a, b) { return a + b; });
         var avg = (sum / noVehicleValues.length).toFixed();
         console.log("Calibration done. Average = ", avg);
+        fs.writeFile("calibrationResult", avg, function(err) {
+            if(err) {
+                return console.log(err);
+            }
+
+            console.log("Results saved to a file.");
+        });
         return avg
     }, 2000)
 
@@ -43,22 +51,43 @@ function count() {
     var counter = 0;
 
     var isVehiclePassing = false;
+    var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
+    var t = new Date();
+    var filePathAndName = "results/" + t.toDateString() + " " + t.getUTCHours() + " " + t.getUTCMinutes() + " " + t.getUTCSeconds();
+    console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise);
+    fs.writeFile(filePathAndName,
+        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm", function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        });
 
+
+    fs.writeFile(filePathAndName + " DEBUG",
+        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm", function(err) {
+            if(err) {
+                return console.log(err);
+            }
+        });
     setInterval(function()
     {
+        var tNow = new Date();
         var currentSignalStrength = getCurrentSignalStrength();
 
-        //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
+        console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
+        fs.appendFileSync(filePathAndName + " DEBUG", "\n" + tNow + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
 
-        if(currentSignalStrength > signalStrengthWithoutNoise )
+        if(currentSignalStrength > signalStrengthWithoutNoise - 5)
         {
             isVehiclePassing = true;
             //console.log("Low signal strength!!!");
         }
-        if (currentSignalStrength <= signalStrengthWithoutNoise && isVehiclePassing === true)
+        if (currentSignalStrength <= signalStrengthWithoutNoise - 5 && isVehiclePassing === true)
         {
             //console.log("counter++");
             counter++;
+            fs.appendFileSync(filePathAndName, "\n" + tNow + " Vehicle detected !");
+            fs.appendFileSync(filePathAndName + " DEBUG", "\n" + tNow + tNow.getUTCMilliseconds() + " Vehicle detected !");
             isVehiclePassing = false;
         }
     }, 50);
