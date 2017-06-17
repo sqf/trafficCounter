@@ -6,10 +6,11 @@ const readline = require('readline');
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
-var datetime = new Date();
-
+// Configuration
 var threshold = 5;
-var apName = "wlo1";
+var apName = "wlxf81a671a3127";
+var minimumTimePeriodBetweenPassingVehicles = 200;
+
 program
     .version('0.0.1')
     .option('-k, --calibrate', 'Run when there are no vehicles. It will take a few seconds to proceed.')
@@ -30,7 +31,7 @@ function calibrate()
 {
 	console.log("Calibration...");
 	var noVehicleValues = [];
-	var fetchNoVehicleValues = setInterval(function () {
+	var fetchNoVehicleValues = setInterval(function() {
         var currentSignalStrength = getCurrentSignalStrength();
         console.log("currentSignalStrength", currentSignalStrength);
         noVehicleValues.push(currentSignalStrength)
@@ -131,6 +132,14 @@ function count() {
                 break;
         }
     });
+
+    function checkisVehiclePassing(currentSignalStrength, tNow) {
+        return currentSignalStrength > signalStrengthWithoutNoise - threshold &&
+            tNow.getTime() - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
+    }
+
+    // Below value is initialized with time when program started to allow count a first vehicle.
+    var momentWhenVehiclePassed = t.getTime();
     setInterval(function()
     {
         var tNow = new Date();
@@ -138,8 +147,9 @@ function count() {
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
         fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
+        console.log(tNow.getTime() - momentWhenVehiclePassed);
 
-        if(currentSignalStrength > signalStrengthWithoutNoise - threshold)
+        if(checkisVehiclePassing(currentSignalStrength, tNow))
         {
             isVehiclePassing = true;
             //console.log("Low signal strength!!!");
@@ -152,6 +162,7 @@ function count() {
             fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Vehicle detected!");
             isVehiclePassing = false;
             console.log("counter: ", counter);
+            momentWhenVehiclePassed = new Date().getTime();
         }
     }, 10);
 }
