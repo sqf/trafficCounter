@@ -29,6 +29,15 @@ exports.printDateAndTime = function(date) {
     return date.toLocaleString() + ":" + date.getUTCMilliseconds();
 }
 
+exports.printUserDetectionResults = function(results) {
+    var str = "";
+    for(var key in results) {
+        if (!results.hasOwnProperty(key)) continue;
+        str = str + key + ": " + results[key] + "\n";
+    }
+    return str;
+};
+
 function getCurrentSignalStrength(apName) {
     return parseFloat(execSync('./wifi-scan-station ' + apName).toString());
 }
