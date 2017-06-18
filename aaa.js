@@ -66,6 +66,7 @@ function count() {
     console.log("Press <m> if you detected a motorcycle.");
     console.log("Press <j> if you detected a fast motorcycle.");
     console.log("Fast means more than 40 kph.");
+    console.log("Threshold is set to ", threshold);
     var counter = 0;
     var isVehiclePassing = false;
     
@@ -75,7 +76,8 @@ function count() {
     var filePathAndNameDebug = filePathAndName + " DEBUG";
     console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise);
     fs.writeFile(filePathAndName,
-        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm", function(err) {
+        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
+        + "\nThreshold value is " + threshold + " dBm", function(err) {
         if(err) {
             return console.log(err);
         }
@@ -83,7 +85,8 @@ function count() {
 
 
     fs.writeFile(filePathAndNameDebug,
-        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm", function(err) {
+        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
+        + "\nThreshold value is " + threshold + " dBm", function(err) {
             if(err) {
                 return console.log(err);
             }
@@ -134,7 +137,7 @@ function count() {
     });
 
     function checkisVehiclePassing(currentSignalStrength, tNow) {
-        return currentSignalStrength > signalStrengthWithoutNoise - threshold &&
+        return currentSignalStrength < signalStrengthWithoutNoise - threshold &&
             tNow.getTime() - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
     }
 
@@ -147,14 +150,14 @@ function count() {
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
         fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
-        console.log(tNow.getTime() - momentWhenVehiclePassed);
+        //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow))
         {
             isVehiclePassing = true;
             //console.log("Low signal strength!!!");
         }
-        if (currentSignalStrength <= signalStrengthWithoutNoise - threshold && isVehiclePassing === true)
+        if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true)
         {
             //console.log("counter++");
             counter++;
