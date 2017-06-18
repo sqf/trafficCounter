@@ -1,10 +1,9 @@
-//var exec = require('exec');
-const execSync = require('child_process').execSync;
 var fs = require('fs');
 var program = require('commander');
 const readline = require('readline');
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
+var utils = require("./utils.js");
 
 // Configuration
 var threshold = 5;
@@ -20,39 +19,9 @@ program
     //.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
     .parse(process.argv);
 
-if (program.calibrate) calibrate();
+if (program.calibrate) utils.calibrate(apName);
 if (program.count) count();
 if (program.countAndDebug) countAndDebug();
-
-function getCurrentSignalStrength() {
-    return parseFloat(execSync('./wifi-scan-station ' + apName).toString());
-}
-
-function calibrate()
-{
-	console.log("Calibration...");
-	var noVehicleValues = [];
-	var fetchNoVehicleValues = setInterval(function() {
-        var currentSignalStrength = getCurrentSignalStrength();
-        console.log("currentSignalStrength", currentSignalStrength);
-        noVehicleValues.push(currentSignalStrength)
-    }, 50);
-
-	setTimeout(function() {
-        clearInterval(fetchNoVehicleValues);
-        var sum = noVehicleValues.reduce(function(a, b) { return a + b; });
-        var avg = (sum / noVehicleValues.length).toFixed();
-        console.log("Calibration done. Average = ", avg);
-        fs.writeFile("calibrationResult", avg, function(err) {
-            if(err) {
-                return console.log(err);
-            }
-            console.log("Results saved to a file.");
-        });
-        return avg;
-    }, 2000)
-
-}
 
 function count() {
     console.log("Press <q> to quit.");
@@ -69,18 +38,20 @@ function count() {
     console.log("Fast means more than 40 kph.");
     console.log("Threshold for a car is set to ", threshold);
     console.log("Threshold for a big vehicle is set to ", thresholdForBigVehicles);
-    var counter = 0;
+    var carCounter = 0;
+    var bigVehicleCounter = 0;
     var isVehiclePassing = false;
     var isBigVehiclePassing = false;
     
     var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
     var t = new Date();
-    var filePathAndName = "results/" + t.toDateString() + " " + t.getUTCHours() + " " + t.getUTCMinutes() + " " + t.getUTCSeconds();
+    var filePathAndName = "results/" + utils.printDateAndTime(t);
     var filePathAndNameDebug = filePathAndName + " DEBUG";
     console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise);
     fs.writeFile(filePathAndName,
         "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
-        + "\nThreshold value is " + threshold + " dBm", function(err) {
+        + "\nThreshold value is " + threshold + " dBm"
+        + "\nThreshold value for a big vehicle is " + thresholdForBigVehicles + " dBm", function(err) {
         if(err) {
             return console.log(err);
         }
@@ -89,7 +60,8 @@ function count() {
 
     fs.writeFile(filePathAndNameDebug,
         "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
-        + "\nThreshold value is " + threshold + " dBm", function(err) {
+        + "\nThreshold value is " + threshold + " dBm"
+        + "\nThreshold value for a big vehicle is " + thresholdForBigVehicles + " dBm", function(err) {
             if(err) {
                 return console.log(err);
             }
@@ -98,8 +70,8 @@ function count() {
     function logThatUserDetected(vehicle) {
         console.log("You detected a " + vehicle + "!");
         var tNow = new Date();
-        fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " User detected a " + vehicle + "!");
-        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds()+ " User detected a " + vehicle +"!");
+        fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!");
+        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle +"!");
     }
 
     process.stdin.on('keypress', (str, key) => {
@@ -149,10 +121,10 @@ function count() {
     setInterval(function()
     {
         var tNow = new Date();
-        var currentSignalStrength = getCurrentSignalStrength();
+        var currentSignalStrength = utils.getCurrentSignalStrength(apName);
 
-        console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
-        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
+        //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
+        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " " + currentSignalStrength);
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow))
@@ -160,25 +132,25 @@ function count() {
             isVehiclePassing = true;
             if(currentSignalStrength < signalStrengthWithoutNoise - thresholdForBigVehicles)
                 isBigVehiclePassing = true;
-            console.log("Low signal strength!!!");
         }
         if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true)
         {
-            //console.log("counter++");
-            counter++;
             if(isBigVehiclePassing) {
-                fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Big vehicle detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Big vehicle detected!");
+                bigVehicleCounter++;
+                fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Big vehicle detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Big vehicle detected!");
                 console.log("Big vehicle detected!");
             } else {
-                fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Car detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Car detected!");
+                carCounter++;
+                fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Car detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Car detected!");
                 console.log("Car detected!");
             }
 
             isVehiclePassing = false;
             isBigVehiclePassing = false;
-            console.log("counter: ", counter);
+            console.log("carCounter: ", carCounter);
+            console.log("bigVehicleCounter: ", bigVehicleCounter);
             momentWhenVehiclePassed = new Date().getTime();
         }
     }, 10);
