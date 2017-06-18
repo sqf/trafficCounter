@@ -67,7 +67,8 @@ function count() {
     console.log("Press <m> if you detected a motorcycle.");
     console.log("Press <j> if you detected a fast motorcycle.");
     console.log("Fast means more than 40 kph.");
-    console.log("Threshold is set to ", threshold);
+    console.log("Threshold for a car is set to ", threshold);
+    console.log("Threshold for a big vehicle is set to ", thresholdForBigVehicles);
     var counter = 0;
     var isVehiclePassing = false;
     var isBigVehiclePassing = false;
@@ -97,8 +98,8 @@ function count() {
     function logThatUserDetected(vehicle) {
         console.log("You detected a " + vehicle + "!");
         var tNow = new Date();
-        fs.appendFileSync(filePathAndName, "\n" + tNow + tNow.getUTCMilliseconds() + " User detected a " + vehicle + "!");
-        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " User detected a " + vehicle +"!");
+        fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " User detected a " + vehicle + "!");
+        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds()+ " User detected a " + vehicle +"!");
     }
 
     process.stdin.on('keypress', (str, key) => {
@@ -151,7 +152,7 @@ function count() {
         var currentSignalStrength = getCurrentSignalStrength();
 
         console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
-        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
+        fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow))
@@ -166,12 +167,12 @@ function count() {
             //console.log("counter++");
             counter++;
             if(isBigVehiclePassing) {
-                fs.appendFileSync(filePathAndName, "\n" + tNow + " Big vehicle detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Big vehicle detected!");
+                fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Big vehicle detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Big vehicle detected!");
                 console.log("Big vehicle detected!");
             } else {
-                fs.appendFileSync(filePathAndName, "\n" + tNow + " Car detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Car detected!");
+                fs.appendFileSync(filePathAndName, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Car detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow.toLocaleString() + ":" + tNow.getUTCMilliseconds() + " Car detected!");
                 console.log("Car detected!");
             }
 
