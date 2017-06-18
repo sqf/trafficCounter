@@ -8,6 +8,7 @@ process.stdin.setRawMode(true);
 
 // Configuration
 var threshold = 5;
+var thresholdForBigVehicles = 15;
 var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 200;
 
@@ -69,6 +70,7 @@ function count() {
     console.log("Threshold is set to ", threshold);
     var counter = 0;
     var isVehiclePassing = false;
+    var isBigVehiclePassing = false;
     
     var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
     var t = new Date();
@@ -148,22 +150,33 @@ function count() {
         var tNow = new Date();
         var currentSignalStrength = getCurrentSignalStrength();
 
-        //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
+        console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
         fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " " + currentSignalStrength);
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow))
         {
             isVehiclePassing = true;
-            //console.log("Low signal strength!!!");
+            if(currentSignalStrength < signalStrengthWithoutNoise - thresholdForBigVehicles)
+                isBigVehiclePassing = true;
+            console.log("Low signal strength!!!");
         }
         if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true)
         {
             //console.log("counter++");
             counter++;
-            fs.appendFileSync(filePathAndName, "\n" + tNow + " Vehicle detected!");
-            fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Vehicle detected!");
+            if(isBigVehiclePassing) {
+                fs.appendFileSync(filePathAndName, "\n" + tNow + " Big vehicle detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Big vehicle detected!");
+                console.log("Big vehicle detected!");
+            } else {
+                fs.appendFileSync(filePathAndName, "\n" + tNow + " Car detected!");
+                fs.appendFileSync(filePathAndNameDebug, "\n" + tNow + tNow.getUTCMilliseconds() + " Car detected!");
+                console.log("Car detected!");
+            }
+
             isVehiclePassing = false;
+            isBigVehiclePassing = false;
             console.log("counter: ", counter);
             momentWhenVehiclePassed = new Date().getTime();
         }
