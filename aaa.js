@@ -6,7 +6,7 @@ process.stdin.setRawMode(true);
 var utils = require("./utils.js");
 
 // Configuration
-var threshold = 5;
+var threshold = 8;
 var thresholdForBigVehicles = 15;
 var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 200;
@@ -163,7 +163,6 @@ function count() {
         var currentSignalStrength = utils.getCurrentSignalStrength(apName);
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
-        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " " + currentSignalStrength);
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow))
@@ -192,5 +191,7 @@ function count() {
             console.log("bigVehicleCounter: ", bigVehicleCounter);
             momentWhenVehiclePassed = new Date().getTime();
         }
+
+        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " " + currentSignalStrength);
     }, 10);
 }
