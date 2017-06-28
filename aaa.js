@@ -8,7 +8,7 @@ var utils = require("./utils.js");
 // Configuration
 var threshold = 8;
 var apName = "wlxf81a671a3127";
-var minimumTimePeriodBetweenPassingVehicles = 150;
+var minimumTimePeriodBetweenPassingVehicles = 200;
 
 program
     .version('0.0.1')
@@ -50,6 +50,8 @@ function count() {
         "fast motorcycle": 0,
         "match": 0
     };
+
+    var occupancy = 0; // total time
 
     var isVehiclePassing = false;
     
@@ -139,48 +141,52 @@ function count() {
     function handleQuitingProgram() {
         var tNow = new Date();
         console.log("\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
-            "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+            + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         fs.appendFileSync(filePathAndName, "\n\nProgram finished at " + tNow + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
-            "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+            + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         fs.appendFileSync(filePathAndNameDebug, "\n\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
-            "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+            + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         process.exit();
     }
 
     function checkisVehiclePassing(currentSignalStrength, tNow) {
-        return currentSignalStrength < signalStrengthWithoutNoise - threshold &&
-            tNow.getTime() - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
+        return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
+            tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
     }
 
     // Below value is initialized with time when program started to allow count a first vehicle.
-    var momentWhenVehiclePassed = t.getTime();
+    var momentWhenVehiclePassed = t;
+    var momentWhenVehicleAppeared;
     setInterval(function()
     {
         var tNow = new Date();
         var currentSignalStrength = utils.getCurrentSignalStrength(apName);
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
-        //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
         if(checkisVehiclePassing(currentSignalStrength, tNow)) {
             if(!isVehiclePassing) {
-                console.log("Vehicle is passing!");
+                momentWhenVehicleAppeared = tNow;
+                console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
             isVehiclePassing = true;
         }
         if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             carCounter++;
+            momentWhenVehiclePassed = new Date();
+            var timeOfPassing = momentWhenVehiclePassed - momentWhenVehicleAppeared;
+            fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!" +
+                "Time of passing: " + timeOfPassing + " ms.");
+            fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!" +
+                "Time of passing: " + timeOfPassing + " ms.");
 
-            fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
-            fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
-
-            console.log("Vehicle detected!");
+            console.log("Vehicle detected! Time of passing: ", timeOfPassing, " ms.");
             isVehiclePassing = false;
             console.log("carCounter: ", carCounter);
-            momentWhenVehiclePassed = new Date().getTime();
+            occupancy += timeOfPassing;
         }
 
         fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " " + currentSignalStrength);
