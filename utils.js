@@ -27,7 +27,7 @@ exports.calibrate = function(apName) {
 
 exports.printDateAndTime = function(date) {
     return date.toLocaleString() + ":" + date.getUTCMilliseconds();
-}
+};
 
 exports.printUserDetectionResults = function(results) {
     var str = "";

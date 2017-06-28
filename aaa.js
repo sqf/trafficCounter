@@ -7,9 +7,8 @@ var utils = require("./utils.js");
 
 // Configuration
 var threshold = 8;
-var thresholdForBigVehicles = 15;
 var apName = "wlxf81a671a3127";
-var minimumTimePeriodBetweenPassingVehicles = 200;
+var minimumTimePeriodBetweenPassingVehicles = 150;
 
 program
     .version('0.0.1')
@@ -37,7 +36,6 @@ function count() {
     console.log("Press <j> if you detected a fast motorcycle.");
     console.log("Fast means more than 40 kph. \n");
     var carCounter = 0;
-    var bigVehicleCounter = 0;
 
     var userDetectionResults = {
         "car": 0,
@@ -49,11 +47,11 @@ function count() {
         "bicycle": 0,
         "fast bicycle": 0,
         "motorcycle": 0,
-        "fast motorcycle": 0
+        "fast motorcycle": 0,
+        "match": 0
     };
 
     var isVehiclePassing = false;
-    var isBigVehiclePassing = false;
     
     var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
     var t = new Date();
@@ -61,12 +59,10 @@ function count() {
     var filePathAndNameDebug = filePathAndName + " DEBUG";
     console.log("Program started at: ", utils.printDateAndTime(t));
     console.log("Threshold for a car is set to ", threshold);
-    console.log("Threshold for a big vehicle is set to ", thresholdForBigVehicles);
     console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise, "\n");
     fs.writeFile(filePathAndName,
         "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
-        + "\nThreshold value is " + threshold + " dBm"
-        + "\nThreshold value for a big vehicle is " + thresholdForBigVehicles + " dBm", function(err) {
+        + "\nThreshold value is " + threshold + " dBm", function(err) {
         if(err) {
             return console.log(err);
         }
@@ -75,8 +71,7 @@ function count() {
 
     fs.writeFile(filePathAndNameDebug,
         "Counting started at " + utils.printDateAndTime(t) + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
-        + "\nThreshold value is " + threshold + " dBm"
-        + "\nThreshold value for a big vehicle is " + thresholdForBigVehicles + " dBm", function(err) {
+        + "\nThreshold value is " + threshold + " dBm", function(err) {
             if(err) {
                 return console.log(err);
             }
@@ -86,7 +81,12 @@ function count() {
         console.log("You detected a " + vehicle + "!");
         var tNow = new Date();
         fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!");
-        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle +"!");
+        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!");
+
+        if(isVehiclePassing) {
+            console.log("Match!");
+            userDetectionResults["match"]++;
+        }
     }
 
     process.stdin.on('keypress', (str, key) => {
@@ -139,13 +139,13 @@ function count() {
     function handleQuitingProgram() {
         var tNow = new Date();
         console.log("\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\ncar: " + carCounter + "\nbig vehicle: " + bigVehicleCounter + "\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
             "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         fs.appendFileSync(filePathAndName, "\n\nProgram finished at " + tNow + "\n\n" +
-            "Program detected: " + "\ncar: " + carCounter + "\nbig vehicle: " + bigVehicleCounter + "\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
             "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         fs.appendFileSync(filePathAndNameDebug, "\n\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\ncar: " + carCounter + "\nbig vehicle: " + bigVehicleCounter + "\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + + "\n\n" +
             "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         process.exit();
     }
@@ -165,30 +165,20 @@ function count() {
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
-        if(checkisVehiclePassing(currentSignalStrength, tNow))
-        {
-            isVehiclePassing = true;
-            if(currentSignalStrength < signalStrengthWithoutNoise - thresholdForBigVehicles)
-                isBigVehiclePassing = true;
-        }
-        if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true)
-        {
-            if(isBigVehiclePassing) {
-                bigVehicleCounter++;
-                fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Big vehicle detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Big vehicle detected!");
-                console.log("Big vehicle detected!");
-            } else {
-                carCounter++;
-                fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Car detected!");
-                fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Car detected!");
-                console.log("Car detected!");
+        if(checkisVehiclePassing(currentSignalStrength, tNow)) {
+            if(!isVehiclePassing) {
+                console.log("Vehicle is passing!");
             }
+            isVehiclePassing = true;
+        }
+        if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
+            carCounter++;
+            fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
+            fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
 
+            console.log("Vehicle detected!");
             isVehiclePassing = false;
-            isBigVehiclePassing = false;
             console.log("carCounter: ", carCounter);
-            console.log("bigVehicleCounter: ", bigVehicleCounter);
             momentWhenVehiclePassed = new Date().getTime();
         }
 
