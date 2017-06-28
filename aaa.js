@@ -25,18 +25,7 @@ if (program.calibrate) utils.calibrate(apName);
 if (program.count) count();
 
 function count() {
-    console.log("Press <q> to quit.");
-    console.log("Press <c> if you detected a car.");
-    console.log("Press <d> if you detected a fast car.");
-    console.log("Press <t> if you detected a truck.");
-    console.log("Press <5> if you detected a fast truck.");
-    console.log("Press <b> if you detected a bus.");
-    console.log("Press <g> if you detected a fast bus.");
-    console.log("Press <r> if you detected a bicycle.");
-    console.log("Press <4> if you detected a fast bicycle.");
-    console.log("Press <m> if you detected a motorcycle.");
-    console.log("Press <j> if you detected a fast motorcycle.");
-    console.log("Fast means more than 40 kph. \n");
+    utils.printProgramInstructions();
     var carCounter = 0;
 
     var userDetectionResults = {
@@ -54,10 +43,8 @@ function count() {
     };
 
     var occupancy = 0; // total time
-
     var isVehiclePassing = false;
-    
-    var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
+    var signalStrengthWithoutNoise = Number(fs.readFileSync("calibrationResult").toString());
     var whenProgramStarted = new Date();
     var filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
     var filePathAndNameDebug = filePathAndName + " DEBUG";

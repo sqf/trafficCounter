@@ -29,6 +29,21 @@ exports.printDateAndTime = function(date) {
     return date.toLocaleString() + ":" + date.getUTCMilliseconds();
 };
 
+exports.printProgramInstructions = function() {
+    console.log("Press <q> to quit.");
+    console.log("Press <c> if you detected a car.");
+    console.log("Press <d> if you detected a fast car.");
+    console.log("Press <t> if you detected a truck.");
+    console.log("Press <5> if you detected a fast truck.");
+    console.log("Press <b> if you detected a bus.");
+    console.log("Press <g> if you detected a fast bus.");
+    console.log("Press <r> if you detected a bicycle.");
+    console.log("Press <4> if you detected a fast bicycle.");
+    console.log("Press <m> if you detected a motorcycle.");
+    console.log("Press <j> if you detected a fast motorcycle.");
+    console.log("Fast means more than 40 kph. \n");
+};
+
 exports.printUserDetectionResults = function(results) {
     var str = "";
     for(var key in results) {
