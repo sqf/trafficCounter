@@ -57,6 +57,8 @@ function count() {
     var t = new Date();
     var filePathAndName = "results/" + utils.printDateAndTime(t).replace(/:/g, "_");
     var filePathAndNameDebug = filePathAndName + " DEBUG";
+    var resultsToBeSaved = "";
+    var resultsToBeSavedDebug = "";
     console.log("Program started at: ", utils.printDateAndTime(t));
     console.log("Threshold for a car is set to ", threshold);
     console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise, "\n");
@@ -80,8 +82,8 @@ function count() {
     function logThatUserDetected(vehicle) {
         console.log("You detected a " + vehicle + "!");
         var tNow = new Date();
-        fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!");
-        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!");
+        resultsToBeSaved += utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n";
+        resultsToBeSavedDebug += utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n";
 
         if(isVehiclePassing) {
             console.log("Match!");
@@ -137,6 +139,7 @@ function count() {
     });
 
     function handleQuitingProgram() {
+        saveBufferToFileAndEmptyIt();
         var tNow = new Date();
         console.log("\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
             "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
@@ -150,7 +153,7 @@ function count() {
         process.exit();
     }
 
-    function checkisVehiclePassing(currentSignalStrength, tNow) {
+    function checkIsVehiclePassing(currentSignalStrength, tNow) {
         return currentSignalStrength < signalStrengthWithoutNoise - threshold &&
             tNow.getTime() - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
     }
@@ -165,7 +168,7 @@ function count() {
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
         //console.log(tNow.getTime() - momentWhenVehiclePassed);
 
-        if(checkisVehiclePassing(currentSignalStrength, tNow)) {
+        if(checkIsVehiclePassing(currentSignalStrength, tNow)) {
             if(!isVehiclePassing) {
                 console.log("Vehicle is passing!");
             }
@@ -173,9 +176,8 @@ function count() {
         }
         if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             carCounter++;
-
-            fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
-            fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
+            resultsToBeSaved += utils.printDateAndTime(tNow) + " Vehicle detected!\n";
+            resultsToBeSavedDebug += utils.printDateAndTime(tNow) + " Vehicle detected!\n";
 
             console.log("Vehicle detected!");
             isVehiclePassing = false;
@@ -183,6 +185,16 @@ function count() {
             momentWhenVehiclePassed = new Date().getTime();
         }
 
-        fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " " + currentSignalStrength);
+        resultsToBeSavedDebug += utils.printDateAndTime(tNow) + " " + currentSignalStrength + "\n";
     }, 10);
+
+    //setInterval(saveBufferToFileAndEmptyIt, 2000);
+
+    function saveBufferToFileAndEmptyIt() {
+        fs.appendFileSync(filePathAndName, resultsToBeSaved);
+        fs.appendFileSync(filePathAndNameDebug, resultsToBeSavedDebug);
+
+        resultsToBeSaved = "";
+        resultsToBeSavedDebug = "";
+    }
 }
