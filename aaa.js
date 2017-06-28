@@ -12,11 +12,14 @@ var minimumTimePeriodBetweenPassingVehicles = 200;
 
 program
     .version('0.0.1')
-    .option('-k, --calibrate', 'Run when there are no vehicles. It will take a few seconds to proceed.')
-    .option('-c, --count', 'Count vehicles')
-    .option('-d, --countAndDebug', 'Count vehicles and save measurements to a file')
+    .option('-k, --calibrate', 'calibrate program')
+    .option('-c, --count', 'count vehicles');
     //.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
-    .parse(process.argv);
+program.on('--help', function(){
+    console.log("Run --calibrate when there are no vehicles.");
+    console.log("It will take a few seconds to proceed.");
+})
+.parse(process.argv);
 
 if (program.calibrate) utils.calibrate(apName);
 if (program.count) count();
