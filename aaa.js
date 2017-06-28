@@ -20,7 +20,6 @@ program
 
 if (program.calibrate) utils.calibrate(apName);
 if (program.count) count();
-if (program.countAndDebug) countAndDebug();
 
 function count() {
     console.log("Press <q> to quit.");
@@ -56,14 +55,14 @@ function count() {
     var isVehiclePassing = false;
     
     var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
-    var t = new Date();
-    var filePathAndName = "results/" + utils.printDateAndTime(t).replace(/:/g, "_");
+    var whenProgramStarted = new Date();
+    var filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
     var filePathAndNameDebug = filePathAndName + " DEBUG";
-    console.log("Program started at: ", utils.printDateAndTime(t));
+    console.log("Program started at: ", utils.printDateAndTime(whenProgramStarted));
     console.log("Threshold for a car is set to ", threshold);
     console.log("Average no vehicle signal strength is: ", signalStrengthWithoutNoise, "\n");
     fs.writeFile(filePathAndName,
-        "Counting started at " + t + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
+        "Counting started at " + whenProgramStarted + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
         + "\nThreshold value is " + threshold + " dBm", function(err) {
         if(err) {
             return console.log(err);
@@ -72,7 +71,7 @@ function count() {
 
 
     fs.writeFile(filePathAndNameDebug,
-        "Counting started at " + utils.printDateAndTime(t) + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
+        "Counting started at " + utils.printDateAndTime(whenProgramStarted) + "\nCalibration value is " + signalStrengthWithoutNoise + "dBm"
         + "\nThreshold value is " + threshold + " dBm", function(err) {
             if(err) {
                 return console.log(err);
@@ -139,15 +138,23 @@ function count() {
     });
 
     function handleQuitingProgram() {
-        var tNow = new Date();
-        console.log("\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+        var whenProgramFinished = new Date();
+        var totalProgramTime = whenProgramFinished - whenProgramStarted;
+        var occupancyRatio = occupancy / totalProgramTime;
+        console.log("\nProgram finished at " + utils.printDateAndTime(whenProgramFinished) +
+            "\nTotal program time is " + totalProgramTime + " ms.\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms" +
+            "\noccupancy ratio: " + occupancyRatio + "\n\n"
             + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
-        fs.appendFileSync(filePathAndName, "\n\nProgram finished at " + tNow + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+        fs.appendFileSync(filePathAndName, "\n\nProgram finished at " + utils.printDateAndTime(whenProgramFinished) +
+            "\nTotal program time is " + totalProgramTime + " ms.\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms" +
+            "\noccupancy ratio: " + occupancyRatio + "\n\n"
             + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
-        fs.appendFileSync(filePathAndNameDebug, "\n\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms\n\n"
+        fs.appendFileSync(filePathAndNameDebug, "\n\nProgram finished at " + utils.printDateAndTime(whenProgramFinished) +
+            "\nTotal program time is " + totalProgramTime + " ms.\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\noccupancy: " + occupancy + " ms" +
+            "\noccupancy ratio: " + occupancyRatio + "\n\n"
             + "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         process.exit();
     }
@@ -158,7 +165,7 @@ function count() {
     }
 
     // Below value is initialized with time when program started to allow count a first vehicle.
-    var momentWhenVehiclePassed = t;
+    var momentWhenVehiclePassed = whenProgramStarted;
     var momentWhenVehicleAppeared;
     setInterval(function()
     {
@@ -174,14 +181,14 @@ function count() {
             }
             isVehiclePassing = true;
         }
-        if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
+        if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             carCounter++;
             momentWhenVehiclePassed = new Date();
             var timeOfPassing = momentWhenVehiclePassed - momentWhenVehicleAppeared;
             fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!" +
-                "Time of passing: " + timeOfPassing + " ms.");
+                " Time of passing: " + timeOfPassing + " ms.");
             fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!" +
-                "Time of passing: " + timeOfPassing + " ms.");
+                " Time of passing: " + timeOfPassing + " ms.");
 
             console.log("Vehicle detected! Time of passing: ", timeOfPassing, " ms.");
             isVehiclePassing = false;
