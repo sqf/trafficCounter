@@ -55,7 +55,7 @@ function count() {
     
     var signalStrengthWithoutNoise = parseFloat(fs.readFileSync("calibrationResult").toString());
     var t = new Date();
-    var filePathAndName = "results/" + utils.printDateAndTime(t);
+    var filePathAndName = "results/" + utils.printDateAndTime(t).replace(/:/g, "_");
     var filePathAndNameDebug = filePathAndName + " DEBUG";
     console.log("Program started at: ", utils.printDateAndTime(t));
     console.log("Threshold for a car is set to ", threshold);
@@ -145,7 +145,7 @@ function count() {
             "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
             "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         fs.appendFileSync(filePathAndNameDebug, "\n\nProgram finished at " + utils.printDateAndTime(tNow) + "\n\n" +
-            "Program detected: " + "\nvehicle: " + carCounter + + "\n\n" +
+            "Program detected: " + "\nvehicle: " + carCounter + "\n\n" +
             "User detected: " + "\n" + utils.printUserDetectionResults(userDetectionResults));
         process.exit();
     }
@@ -173,6 +173,7 @@ function count() {
         }
         if (currentSignalStrength >= signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             carCounter++;
+
             fs.appendFileSync(filePathAndName, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
             fs.appendFileSync(filePathAndNameDebug, "\n" + utils.printDateAndTime(tNow) + " Vehicle detected!");
 
