@@ -167,3 +167,5 @@ function count() {
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + currentSignalStrength + "\n");
     }, 10);
 }
+
+exports.count = count;
