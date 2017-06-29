@@ -8,12 +8,13 @@ var utils = require("./utils.js");
 // Configuration
 var threshold = 8;
 var apName = "wlxf81a671a3127";
-var minimumTimePeriodBetweenPassingVehicles = 200;
+var minimumTimePeriodBetweenPassingVehicles = 100;
 
 program
     .version('0.0.1')
     .option('-k, --calibrate', 'calibrate program')
-    .option('-c, --count', 'count vehicles');
+    .option('-c, --count', 'count vehicles')
+    .option('-s, --simalate', 'simulate counting');
     //.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
 program.on('--help', function() {
     console.log("Run --calibrate when there are no vehicles.");
@@ -49,7 +50,8 @@ function count() {
     var filePathAndNameDebug = filePathAndName + " DEBUG";
     var initialInfo = "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
         "\nCalibration value (average no vehicle signal strength) is " +
-        signalStrengthWithoutNoise + "dBm" + "\nThreshold value is " + threshold + " dBm\n\n";
+        signalStrengthWithoutNoise + "dBm" + "\nThreshold value is " + threshold + " dBm" +
+        "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms\n\n";
     console.log(initialInfo);
 
     fs.writeFile(filePathAndName, initialInfo);
@@ -130,6 +132,15 @@ function count() {
     }
 
     function checkIsVehiclePassing(currentSignalStrength, tNow) {
+        if((currentSignalStrength <= signalStrengthWithoutNoise - threshold) &&
+            !(tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles)) {
+            console.log(utils.printDateAndTime(momentWhenVehicleAppeared) +
+                " Zadzialalo zabezpieczenie z czasem!");
+            fs.appendFileSync(filePathAndName, utils.printDateAndTime(momentWhenVehicleAppeared) +
+                " Zadzialalo zabezpieczenie z czasem!");
+            fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) +
+                " Zadzialalo zabezpieczenie z czasem!");
+        }
         return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
             tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
     }
