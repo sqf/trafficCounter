@@ -141,6 +141,9 @@ function count() {
     {
         var tNow = new Date();
         var currentSignalStrength = utils.getCurrentSignalStrength(apName);
+        if(!currentSignalStrength) {
+            handleQuitingProgram();
+        }
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
 

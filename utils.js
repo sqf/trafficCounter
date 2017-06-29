@@ -54,7 +54,7 @@ exports.printUserDetectionResults = function(results) {
 };
 
 function getCurrentSignalStrength(apName) {
-    return parseFloat(execSync('./wifi-scan-station ' + apName).toString());
+    return Number(execSync('./wifi-scan-station ' + apName).toString());
 }
 
 exports.getCurrentSignalStrength = getCurrentSignalStrength;
