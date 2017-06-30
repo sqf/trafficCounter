@@ -54,9 +54,13 @@ function count(isSimulation) {
     var whenProgramStarted = new Date();
     var filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
     var filePathAndNameDebug = filePathAndName + " DEBUG";
-    var initialInfo = "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
+    var initialInfo = "";
+    if(isSimulation) {
+        initialInfo += "This is a simulation.\n"
+    }
+    initialInfo += "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
         "\nCalibration value (average no vehicle signal strength) is " +
-        signalStrengthWithoutNoise + "dBm" + "\nThreshold value is " + threshold + " dBm" +
+        signalStrengthWithoutNoise + " dBm" + "\nThreshold value is " + threshold + " dBm" +
         "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms\n\n";
     console.log(initialInfo);
 
@@ -173,8 +177,7 @@ function count(isSimulation) {
         }
         if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             vehicleCounter++;
-            momentWhenVehiclePassed = new Date();
-            var timeOfPassing = momentWhenVehiclePassed - momentWhenVehicleAppeared;
+            var timeOfPassing = tNow - momentWhenVehicleAppeared;
             var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
                 " Time of passing: " + timeOfPassing + " ms.\n";
             fs.appendFileSync(filePathAndName, vehicleInfo);
@@ -190,8 +193,11 @@ function count(isSimulation) {
 
 function simulate(pathToFile) {
     console.log("Using " + pathToFile + " as input.");
-    var rssiValues = fs.readFileSync(pathToFile).toString().split("\n").
-    map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
+    var linesFromLog = fs.readFileSync(pathToFile).toString().split("\n");
+    var calibrationValue = linesFromLog[1].match(/-\d\d/)[0];
+    console.log("Read calibration value is ", calibrationValue);
+    fs.writeFileSync("calibrationResult", calibrationValue);
+    var rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
 
     var getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
     td.when(getCurrentSignalStrength("wlxf81a671a3127")).thenReturn.apply(null, rssiValues);

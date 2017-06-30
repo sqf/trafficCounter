@@ -55,7 +55,7 @@ exports.printUserDetectionResults = function(results) {
 
 exports.getProperIntervalBetweenMeasurements = function(isSimulation) {
     if(isSimulation) {
-        return 20;
+        return 15;
     } else {
         return 10;
     }
