@@ -141,11 +141,11 @@ function count(isSimulation) {
         if((currentSignalStrength <= signalStrengthWithoutNoise - threshold) &&
             !(tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles)) {
             console.log(utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!");
+                " Zadzialalo zabezpieczenie z czasem!\n");
             fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!");
+                " Zadzialalo zabezpieczenie z czasem!\n");
             fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!");
+                " Zadzialalo zabezpieczenie z czasem!\n");
         }
         return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
             tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
