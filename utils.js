@@ -53,6 +53,22 @@ exports.printUserDetectionResults = function(results) {
     return str;
 };
 
+exports.getProperIntervalBetweenMeasurements = function(isSimulation) {
+    if(isSimulation) {
+        return 20;
+    } else {
+        return 10;
+    }
+};
+
+exports.takeThirdElementFromLine = function(element) {
+    return element.split(" ")[2];
+};
+
+exports.checkIfNumber = function(element) {
+    return !isNaN(element);
+};
+
 function getCurrentSignalStrength(apName) {
     return Number(execSync('./wifi-scan-station ' + apName).toString());
 }

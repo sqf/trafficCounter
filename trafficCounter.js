@@ -1,6 +1,7 @@
 var fs = require('fs');
 var program = require('commander');
 const readline = require('readline');
+var td = require("testdouble");
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 var utils = require("./utils.js");
@@ -14,7 +15,7 @@ program
     .version('0.0.1')
     .option('-k, --calibrate', 'calibrate program')
     .option('-c, --count', 'count vehicles')
-    .option('-s, --simalate', 'simulate counting');
+    .option('-s, --simulate [pathToLog]', 'simulate counting');
     //.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
 program.on('--help', function() {
     console.log("Run --calibrate when there are no vehicles.");
@@ -24,8 +25,13 @@ program.on('--help', function() {
 
 if(program.calibrate) utils.calibrate(apName);
 if(program.count) count();
+if(typeof program.simulate === 'string' || program.simulate instanceof String) {
+    simulate(program.simulate);
+} else {
+    console.log("You must specify a path to log!");
+}
 
-function count() {
+function count(isSimulation) {
     utils.printProgramInstructions();
     var vehicleCounter = 0;
     var userDetectionResults = {
@@ -58,8 +64,8 @@ function count() {
     fs.writeFile(filePathAndNameDebug, initialInfo);
 
     function logThatUserDetected(vehicle) {
-        console.log("You detected a " + vehicle + "!");
         var tNow = new Date();
+        console.log(utils.printDateAndTime(tNow) + " You detected a " + vehicle + "!");
         fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
 
@@ -134,11 +140,11 @@ function count() {
     function checkIsVehiclePassing(currentSignalStrength, tNow) {
         if((currentSignalStrength <= signalStrengthWithoutNoise - threshold) &&
             !(tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles)) {
-            console.log(utils.printDateAndTime(momentWhenVehicleAppeared) +
+            console.log(utils.printDateAndTime(tNow) +
                 " Zadzialalo zabezpieczenie z czasem!");
-            fs.appendFileSync(filePathAndName, utils.printDateAndTime(momentWhenVehicleAppeared) +
+            fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) +
                 " Zadzialalo zabezpieczenie z czasem!");
-            fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) +
+            fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) +
                 " Zadzialalo zabezpieczenie z czasem!");
         }
         return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
@@ -179,7 +185,17 @@ function count() {
         }
 
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + currentSignalStrength + "\n");
-    }, 10);
+    }, utils.getProperIntervalBetweenMeasurements(isSimulation));
 }
 
-exports.count = count;
+function simulate(pathToFile) {
+    console.log("Using " + pathToFile + " as input.");
+    var rssiValues = fs.readFileSync(pathToFile).toString().split("\n").
+    map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
+
+    var getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
+    td.when(getCurrentSignalStrength("wlxf81a671a3127")).thenReturn.apply(null, rssiValues);
+
+    count(true);
+}
+
