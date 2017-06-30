@@ -7,9 +7,11 @@ process.stdin.setRawMode(true);
 var utils = require("./utils.js");
 
 // Configuration
-var threshold = 8;
+var threshold = 6;
+var thresholdForFastVehicles = 8;
 var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 100;
+var minimumVehiclePassingTime = 200;
 
 program
     .version('0.0.1')
@@ -61,7 +63,9 @@ function count(isSimulation) {
     initialInfo += "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
         "\nCalibration value (average no vehicle signal strength) is " +
         signalStrengthWithoutNoise + " dBm" + "\nThreshold value is " + threshold + " dBm" +
-        "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms\n\n";
+        "\nThreshold for fast vehicles is " + thresholdForFastVehicles + " dBm" +
+        "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms" +
+        "\nMinimum vehicle passing time: " + minimumVehiclePassingTime + " ms\n\n";
     console.log(initialInfo);
 
     fs.writeFile(filePathAndName, initialInfo);
@@ -158,10 +162,12 @@ function count(isSimulation) {
     // Below value is initialized with time when program started to allow count a first vehicle.
     var momentWhenVehiclePassed = whenProgramStarted;
     var momentWhenVehicleAppeared;
+    var theLowestSignalStrength;
     setInterval(function()
     {
         var tNow = new Date();
         var currentSignalStrength = utils.getCurrentSignalStrength(apName);
+
         if(!currentSignalStrength) {
             handleQuitingProgram();
         }
@@ -173,18 +179,28 @@ function count(isSimulation) {
                 momentWhenVehicleAppeared = tNow;
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
+            if(currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
+                theLowestSignalStrength = currentSignalStrength;
+            }
             isVehiclePassing = true;
         }
         if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
-            vehicleCounter++;
-            var timeOfPassing = tNow - momentWhenVehicleAppeared;
-            var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
-                " Time of passing: " + timeOfPassing + " ms.\n";
-            fs.appendFileSync(filePathAndName, vehicleInfo);
-            fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
-            console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
-            isVehiclePassing = false;
-            occupancy += timeOfPassing;
+            if(tNow - momentWhenVehicleAppeared < minimumVehiclePassingTime &&
+                theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles)
+            {
+                isVehiclePassing = false;
+            } else {
+                vehicleCounter++;
+                var timeOfPassing = tNow - momentWhenVehicleAppeared;
+                var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
+                    " Time of passing: " + timeOfPassing + " ms.\n";
+                fs.appendFileSync(filePathAndName, vehicleInfo);
+                fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
+                console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
+                isVehiclePassing = false;
+                theLowestSignalStrength = null;
+                occupancy += timeOfPassing;
+            }
         }
 
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + currentSignalStrength + "\n");
@@ -204,4 +220,3 @@ function simulate(pathToFile) {
 
     count(true);
 }
-
