@@ -7,11 +7,12 @@ process.stdin.setRawMode(true);
 var utils = require("./utils.js");
 
 // Configuration
-var threshold = 6;
-var thresholdForFastVehicles = 8;
+var threshold = 7;
+var thresholdForFastVehicles = 10;
 var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 100;
-var minimumVehiclePassingTime = 200;
+var minimumVehiclePassingTime = 250;
+var minimumRiseOfSignal = 3;
 
 program
     .version('0.0.1')
@@ -46,8 +47,7 @@ function count(isSimulation) {
         "bicycle": 0,
         "fast bicycle": 0,
         "motorcycle": 0,
-        "fast motorcycle": 0,
-        "match": 0
+        "fast motorcycle": 0
     };
     var occupancy = 0; // total time
     var isVehiclePassing = false;
@@ -65,7 +65,8 @@ function count(isSimulation) {
         signalStrengthWithoutNoise + " dBm" + "\nThreshold value is " + threshold + " dBm" +
         "\nThreshold for fast vehicles is " + thresholdForFastVehicles + " dBm" +
         "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms" +
-        "\nMinimum vehicle passing time: " + minimumVehiclePassingTime + " ms\n\n";
+        "\nMinimum vehicle passing time: " + minimumVehiclePassingTime + " ms" +
+        "\nMinimum rise of signal after vehicle passed: " + minimumRiseOfSignal + " dBm \n\n";
     console.log(initialInfo);
 
     fs.writeFile(filePathAndName, initialInfo);
@@ -76,11 +77,6 @@ function count(isSimulation) {
         console.log(utils.printDateAndTime(tNow) + " You detected a " + vehicle + "!");
         fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
-
-        if(isVehiclePassing) {
-            console.log("Match!");
-            userDetectionResults["match"]++;
-        }
     }
 
     process.stdin.on('keypress', (str, key) => {
@@ -145,7 +141,7 @@ function count(isSimulation) {
         process.exit();
     }
 
-    function checkIsVehiclePassing(currentSignalStrength, tNow) {
+    function checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, tNow) {
         if((currentSignalStrength <= signalStrengthWithoutNoise - threshold) &&
             !(tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles)) {
             console.log(utils.printDateAndTime(tNow) +
@@ -159,6 +155,10 @@ function count(isSimulation) {
             tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
     }
 
+    function checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) {
+        return tNow - momentWhenVehicleAppeared > minimumVehiclePassingTime
+    }
+
     // Below value is initialized with time when program started to allow count a first vehicle.
     var momentWhenVehiclePassed = whenProgramStarted;
     var momentWhenVehicleAppeared;
@@ -166,7 +166,7 @@ function count(isSimulation) {
     setInterval(function()
     {
         var tNow = new Date();
-        var currentSignalStrength = utils.getCurrentSignalStrength(apName);
+        var currentSignalStrength = Number(utils.getCurrentSignalStrength(apName));  /// co tu sie u licha dzieje??
 
         if(!currentSignalStrength) {
             handleQuitingProgram();
@@ -174,9 +174,10 @@ function count(isSimulation) {
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
 
-        if(checkIsVehiclePassing(currentSignalStrength, tNow)) {
+        if(checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, tNow)) {
             if(!isVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
+                fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!\n");
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
             if(currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
@@ -185,21 +186,35 @@ function count(isSimulation) {
             isVehiclePassing = true;
         }
         if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
-            if(tNow - momentWhenVehicleAppeared < minimumVehiclePassingTime &&
+            if(!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
                 theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles)
             {
+                fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie z lowSig: ");
+                theLowestSignalStrength = null;
                 isVehiclePassing = false;
             } else {
-                vehicleCounter++;
-                var timeOfPassing = tNow - momentWhenVehicleAppeared;
-                var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
-                    " Time of passing: " + timeOfPassing + " ms.\n";
-                fs.appendFileSync(filePathAndName, vehicleInfo);
-                fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
-                console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
-                isVehiclePassing = false;
-                theLowestSignalStrength = null;
-                occupancy += timeOfPassing;
+                if(currentSignalStrength - theLowestSignalStrength >= minimumRiseOfSignal) {
+                    vehicleCounter++;
+                    var timeOfPassing = tNow - momentWhenVehicleAppeared;
+                    var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
+                        " Time of passing: " + timeOfPassing + " ms.\n";
+                    fs.appendFileSync(filePathAndName, vehicleInfo);
+                    fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
+                    console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
+                    isVehiclePassing = false;
+                    theLowestSignalStrength = null;
+                    occupancy += timeOfPassing;
+                } else {
+                    var wynik = currentSignalStrength - theLowestSignalStrength;
+                    var wynik2 = theLowestSignalStrength - currentSignalStrength;
+                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, currentSignalStrength : ");
+                    fs.appendFileSync(filePathAndNameDebug, currentSignalStrength);
+                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, theLowestSignalStrength : ");
+                    fs.appendFileSync(filePathAndNameDebug, theLowestSignalStrength);
+                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, wynik : ");
+                    fs.appendFileSync(filePathAndNameDebug, wynik);
+                    isVehiclePassing = false;
+                }
             }
         }
 
