@@ -13,6 +13,7 @@ var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 100;
 var minimumVehiclePassingTime = 250;
 var minimumRiseOfSignal = 3;
+var minimumDropOfSignal = 3;
 
 program
     .version('0.0.1')
@@ -66,7 +67,8 @@ function count(isSimulation) {
         "\nThreshold for fast vehicles is " + thresholdForFastVehicles + " dBm" +
         "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms" +
         "\nMinimum vehicle passing time: " + minimumVehiclePassingTime + " ms" +
-        "\nMinimum rise of signal after vehicle passed: " + minimumRiseOfSignal + " dBm \n\n";
+        "\nMinimum rise of signal after vehicle passed: " + minimumRiseOfSignal + " dBm" +
+        "\nMinimum drop of signal when vehicle passing: " + minimumDropOfSignal + " dBm \n\n";
     console.log(initialInfo);
 
     fs.writeFile(filePathAndName, initialInfo);
@@ -141,18 +143,10 @@ function count(isSimulation) {
         process.exit();
     }
 
-    function checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, tNow) {
-        if((currentSignalStrength <= signalStrengthWithoutNoise - threshold) &&
-            !(tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles)) {
-            console.log(utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!\n");
-            fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!\n");
-            fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) +
-                " Zadzialalo zabezpieczenie z czasem!\n");
-        }
+    function checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow) {
         return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
-            tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles;
+            tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles &&
+            previousSignalStrength - currentSignalStrength > minimumDropOfSignal;
     }
 
     function checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) {
@@ -163,10 +157,13 @@ function count(isSimulation) {
     var momentWhenVehiclePassed = whenProgramStarted;
     var momentWhenVehicleAppeared;
     var theLowestSignalStrength;
+    var previousSignalStrength;
+    var currentSignalStrength = 0;
     setInterval(function()
     {
         var tNow = new Date();
-        var currentSignalStrength = Number(utils.getCurrentSignalStrength(apName));  /// co tu sie u licha dzieje??
+        previousSignalStrength = Number(JSON.parse(JSON.stringify(currentSignalStrength)));
+        currentSignalStrength = Number(utils.getCurrentSignalStrength(apName));
 
         if(!currentSignalStrength) {
             handleQuitingProgram();
@@ -174,7 +171,7 @@ function count(isSimulation) {
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
 
-        if(checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, tNow)) {
+        if(checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow)) {
             if(!isVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
                 fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
@@ -185,7 +182,7 @@ function count(isSimulation) {
             }
             isVehiclePassing = true;
         }
-        if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
+        if(currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             if(!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
                 theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles)
             {
@@ -198,7 +195,8 @@ function count(isSimulation) {
                     vehicleCounter++;
                     var timeOfPassing = tNow - momentWhenVehicleAppeared;
                     var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
-                        " Time of passing: " + timeOfPassing + " ms. + The lowest signal strength: theLowestSignalStrength\n";
+                        " Time of passing: " + timeOfPassing + " ms. The lowest signal strength: " +
+                        theLowestSignalStrength + "\n";
                     fs.appendFileSync(filePathAndName, vehicleInfo);
                     fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
                     console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
