@@ -7,7 +7,7 @@ process.stdin.setRawMode(true);
 var utils = require("./utils.js");
 
 // Configuration
-var threshold = 7;
+var threshold = 6;
 var thresholdForFastVehicles = 10;
 var apName = "wlxf81a671a3127";
 var minimumTimePeriodBetweenPassingVehicles = 100;
@@ -177,7 +177,7 @@ function count(isSimulation) {
         if(checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, tNow)) {
             if(!isVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
-                fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!\n");
+                fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
             if(currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
@@ -193,11 +193,12 @@ function count(isSimulation) {
                 theLowestSignalStrength = null;
                 isVehiclePassing = false;
             } else {
-                if(currentSignalStrength - theLowestSignalStrength >= minimumRiseOfSignal) {
+                if(currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal ||
+                    theLowestSignalStrength < signalStrengthWithoutNoise - thresholdForFastVehicles) {
                     vehicleCounter++;
                     var timeOfPassing = tNow - momentWhenVehicleAppeared;
                     var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
-                        " Time of passing: " + timeOfPassing + " ms.\n";
+                        " Time of passing: " + timeOfPassing + " ms. + The lowest signal strength: theLowestSignalStrength\n";
                     fs.appendFileSync(filePathAndName, vehicleInfo);
                     fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
                     console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
@@ -217,8 +218,9 @@ function count(isSimulation) {
                 }
             }
         }
-
-        fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + currentSignalStrength + "\n");
+        var totalProgramDuration =  tNow - whenProgramStarted;
+        fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + totalProgramDuration + " " +
+            currentSignalStrength + "\n");
     }, utils.getProperIntervalBetweenMeasurements(isSimulation));
 }
 
@@ -231,7 +233,7 @@ function simulate(pathToFile) {
     var rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
 
     var getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
-    td.when(getCurrentSignalStrength("wlxf81a671a3127")).thenReturn.apply(null, rssiValues);
+    td.when(getCurrentSignalStrength(apName)).thenReturn.apply(null, rssiValues);
 
     count(true);
 }
