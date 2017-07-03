@@ -1,19 +1,20 @@
-var fs = require('fs');
-var program = require('commander');
+"use strict";
+let fs = require('fs');
+let program = require('commander');
 const readline = require('readline');
-var td = require("testdouble");
+let td = require("testdouble");
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
-var utils = require("./utils.js");
+let utils = require("./utils.js");
 
 // Configuration
-var threshold = 6;
-var thresholdForFastVehicles = 10;
-var apName = "wlxf81a671a3127";
-var minimumTimePeriodBetweenPassingVehicles = 100;
-var minimumVehiclePassingTime = 250;
-var minimumRiseOfSignal = 3;
-var minimumDropOfSignal = 3;
+const threshold = 6;
+const thresholdForFastVehicles = 10;
+const apName = "wlxf81a671a3127";
+const minimumTimePeriodBetweenPassingVehicles = 100;
+const minimumVehiclePassingTime = 250;
+const minimumRiseOfSignal = 3;
+const minimumDropOfSignal = 3;
 
 program
     .version('0.0.1')
@@ -37,8 +38,8 @@ if(typeof program.simulate === 'string' || program.simulate instanceof String) {
 
 function count(isSimulation) {
     utils.printProgramInstructions();
-    var vehicleCounter = 0;
-    var userDetectionResults = {
+    let vehicleCounter = 0;
+    let userDetectionResults = {
         "car": 0,
         "fast car": 0,
         "truck": 0,
@@ -50,14 +51,14 @@ function count(isSimulation) {
         "motorcycle": 0,
         "fast motorcycle": 0
     };
-    var occupancy = 0; // total time
-    var isVehiclePassing = false;
+    let occupancy = 0; // total time
+    let isVehiclePassing = false;
 
-    var signalStrengthWithoutNoise = Number(fs.readFileSync("calibrationResult").toString());
-    var whenProgramStarted = new Date();
-    var filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
-    var filePathAndNameDebug = filePathAndName + " DEBUG";
-    var initialInfo = "";
+    let signalStrengthWithoutNoise = Number(fs.readFileSync("calibrationResult").toString());
+    let whenProgramStarted = new Date();
+    let filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
+    let filePathAndNameDebug = filePathAndName + " DEBUG";
+    let initialInfo = "";
     if(isSimulation) {
         initialInfo += "This is a simulation.\n"
     }
@@ -75,7 +76,7 @@ function count(isSimulation) {
     fs.writeFile(filePathAndNameDebug, initialInfo);
 
     function logThatUserDetected(vehicle) {
-        var tNow = new Date();
+        let tNow = new Date();
         console.log(utils.printDateAndTime(tNow) + " You detected a " + vehicle + "!");
         fs.appendFileSync(filePathAndName, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " User detected a " + vehicle + "!\n");
@@ -85,6 +86,7 @@ function count(isSimulation) {
         switch(key.sequence) {
             case "q":
                 handleQuitingProgram();
+                break;
             case "c":
                 userDetectionResults["car"]++;
                 logThatUserDetected("car");
@@ -129,10 +131,10 @@ function count(isSimulation) {
     });
 
     function handleQuitingProgram() {
-        var whenProgramFinished = new Date();
-        var totalProgramDuration = whenProgramFinished - whenProgramStarted;
-        var occupancyRatio = occupancy / totalProgramDuration;
-        var summaryInfo = "\nProgram finished at " + utils.printDateAndTime(whenProgramFinished) +
+        let whenProgramFinished = new Date();
+        let totalProgramDuration = whenProgramFinished - whenProgramStarted;
+        let occupancyRatio = occupancy / totalProgramDuration;
+        let summaryInfo = "\nProgram finished at " + utils.printDateAndTime(whenProgramFinished) +
             "\nTotal program duration: " + totalProgramDuration + " ms.\n\n" +
             "Program results: " + "\ncounted vehicles: " + vehicleCounter + "\noccupancy: " + occupancy + " ms" +
             "\noccupancy ratio: " + occupancyRatio + "\n\n"
@@ -154,14 +156,14 @@ function count(isSimulation) {
     }
 
     // Below value is initialized with time when program started to allow count a first vehicle.
-    var momentWhenVehiclePassed = whenProgramStarted;
-    var momentWhenVehicleAppeared;
-    var theLowestSignalStrength;
-    var previousSignalStrength;
-    var currentSignalStrength = 0;
+    let momentWhenVehiclePassed = whenProgramStarted;
+    let momentWhenVehicleAppeared;
+    let theLowestSignalStrength;
+    let previousSignalStrength;
+    let currentSignalStrength = 0;
     setInterval(function()
     {
-        var tNow = new Date();
+        let tNow = new Date();
         previousSignalStrength = Number(JSON.parse(JSON.stringify(currentSignalStrength)));
         currentSignalStrength = Number(utils.getCurrentSignalStrength(apName));
 
@@ -193,8 +195,8 @@ function count(isSimulation) {
                 if(currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal ||
                     theLowestSignalStrength < signalStrengthWithoutNoise - thresholdForFastVehicles) {
                     vehicleCounter++;
-                    var timeOfPassing = tNow - momentWhenVehicleAppeared;
-                    var vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
+                    let timeOfPassing = tNow - momentWhenVehicleAppeared;
+                    let vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
                         " Time of passing: " + timeOfPassing + " ms. The lowest signal strength: " +
                         theLowestSignalStrength + "\n";
                     fs.appendFileSync(filePathAndName, vehicleInfo);
@@ -204,8 +206,8 @@ function count(isSimulation) {
                     theLowestSignalStrength = null;
                     occupancy += timeOfPassing;
                 } else {
-                    var wynik = currentSignalStrength - theLowestSignalStrength;
-                    var wynik2 = theLowestSignalStrength - currentSignalStrength;
+                    let wynik = currentSignalStrength - theLowestSignalStrength;
+                    let wynik2 = theLowestSignalStrength - currentSignalStrength;
                     fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, currentSignalStrength : ");
                     fs.appendFileSync(filePathAndNameDebug, currentSignalStrength);
                     fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, theLowestSignalStrength : ");
@@ -216,7 +218,7 @@ function count(isSimulation) {
                 }
             }
         }
-        var totalProgramDuration =  tNow - whenProgramStarted;
+        let totalProgramDuration =  tNow - whenProgramStarted;
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + totalProgramDuration + " " +
             currentSignalStrength + "\n");
     }, utils.getProperIntervalBetweenMeasurements(isSimulation));
@@ -224,13 +226,13 @@ function count(isSimulation) {
 
 function simulate(pathToFile) {
     console.log("Using " + pathToFile + " as input.");
-    var linesFromLog = fs.readFileSync(pathToFile).toString().split("\n");
-    var calibrationValue = linesFromLog[1].match(/-\d\d/)[0];
+    let linesFromLog = fs.readFileSync(pathToFile).toString().split("\n");
+    let calibrationValue = linesFromLog[1].match(/-\d\d/)[0];
     console.log("Read calibration value is ", calibrationValue);
     fs.writeFileSync("calibrationResult", calibrationValue);
-    var rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
+    let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
 
-    var getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
+    let getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
     td.when(getCurrentSignalStrength(apName)).thenReturn.apply(null, rssiValues);
 
     count(true);

@@ -1,19 +1,20 @@
+"use strict";
 const execSync = require('child_process').execSync;
-var fs = require('fs');
+let fs = require('fs');
 
 exports.calibrate = function(apName) {
     console.log("Calibration...");
-    var noVehicleValues = [];
-    var fetchNoVehicleValues = setInterval(function() {
-        var currentSignalStrength = getCurrentSignalStrength(apName);
+    let noVehicleValues = [];
+    let fetchNoVehicleValues = setInterval(function() {
+        let currentSignalStrength = getCurrentSignalStrength(apName);
         console.log("currentSignalStrength", currentSignalStrength);
         noVehicleValues.push(currentSignalStrength)
     }, 50);
 
     setTimeout(function() {
         clearInterval(fetchNoVehicleValues);
-        var sum = noVehicleValues.reduce(function(a, b) { return a + b; });
-        var avg = (sum / noVehicleValues.length).toFixed();
+        let sum = noVehicleValues.reduce(function(a, b) { return a + b; });
+        let avg = (sum / noVehicleValues.length).toFixed();
         console.log("Calibration done. Average = ", avg);
         fs.writeFile("calibrationResult", avg, function(err) {
             if(err) {
@@ -45,8 +46,8 @@ exports.printProgramInstructions = function() {
 };
 
 exports.printUserDetectionResults = function(results) {
-    var str = "";
-    for(var key in results) {
+    let str = "";
+    for(let key in results) {
         if (!results.hasOwnProperty(key)) continue;
         str = str + key + ": " + results[key] + "\n";
     }
