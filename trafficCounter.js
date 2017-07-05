@@ -10,11 +10,19 @@ let utils = require("./utils.js");
 // Configuration
 const threshold = 6;
 const thresholdForFastVehicles = 10;
-const apName = "wlxf81a671a3127";
 const minimumTimePeriodBetweenPassingVehicles = 100;
 const minimumVehiclePassingTime = 250;
 const minimumRiseOfSignal = 3;
 const minimumDropOfSignal = 3;
+
+let wirelessInterfaceName;
+try{
+    wirelessInterfaceName = fs.readFileSync("wirelessInterfaceName");
+    console.log("Wireless interface read from a file: ", wirelessInterfaceName);
+}
+catch(err) {
+    wirelessInterfaceName = utils.getWirelessInterfaceName();
+}
 
 program
     .version('0.0.1')
@@ -28,7 +36,7 @@ program.on('--help', function() {
 })
     .parse(process.argv);
 
-if(program.calibrate) utils.calibrate(apName);
+if(program.calibrate) utils.calibrate(wirelessInterfaceName);
 if(program.count) count();
 if(program.simulate) {
     if(typeof program.simulate === 'string' || program.simulate instanceof String) {
@@ -37,7 +45,6 @@ if(program.simulate) {
         console.log("You must specify a path to log!");
     }
 }
-
 
 function count(isSimulation) {
     utils.printProgramInstructions();
@@ -168,7 +175,7 @@ function count(isSimulation) {
     {
         let tNow = new Date();
         previousSignalStrength = Number(JSON.parse(JSON.stringify(currentSignalStrength)));
-        currentSignalStrength = Number(utils.getCurrentSignalStrength(apName));
+        currentSignalStrength = Number(utils.getCurrentSignalStrength(wirelessInterfaceName));
 
         if(!currentSignalStrength) {
             handleQuitingProgram();
@@ -238,7 +245,7 @@ function simulate(pathToFile) {
     let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
 
     let getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
-    td.when(getCurrentSignalStrength(apName)).thenReturn.apply(null, rssiValues);
+    td.when(getCurrentSignalStrength(wirelessInterfaceName)).thenReturn.apply(null, rssiValues);
 
     count(true);
 }

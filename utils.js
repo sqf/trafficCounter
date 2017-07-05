@@ -70,8 +70,13 @@ exports.checkIfNumber = (element) => {
     return !isNaN(element);
 };
 
+function getWirelessInterfaceName() {
+    return execSync("ip link show | grep 3:").toString().split(" ")[1].slice(0, -1);
+}
+
 function getCurrentSignalStrength(apName) {
     return Number(execSync('./wifi-scan-station ' + apName).toString());
 }
 
 exports.getCurrentSignalStrength = getCurrentSignalStrength;
+exports.getWirelessInterfaceName = getWirelessInterfaceName;
