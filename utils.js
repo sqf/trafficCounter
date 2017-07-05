@@ -2,35 +2,35 @@
 const execSync = require('child_process').execSync;
 let fs = require('fs');
 
-exports.calibrate = function(apName) {
+exports.calibrate = (apName) => {
     console.log("Calibration...");
     let noVehicleValues = [];
-    let fetchNoVehicleValues = setInterval(function() {
+    let fetchNoVehicleValues = setInterval(() => {
         let currentSignalStrength = getCurrentSignalStrength(apName);
         console.log("currentSignalStrength", currentSignalStrength);
         noVehicleValues.push(currentSignalStrength)
     }, 50);
 
-    setTimeout(function() {
+    setTimeout(() => {
         clearInterval(fetchNoVehicleValues);
-        let sum = noVehicleValues.reduce(function(a, b) { return a + b; });
+        let sum = noVehicleValues.reduce((a, b) => a + b);
         let avg = (sum / noVehicleValues.length).toFixed();
         console.log("Calibration done. Average = ", avg);
-        fs.writeFile("calibrationResult", avg, function(err) {
+        fs.writeFile("calibrationResult", avg, (err) => {
             if(err) {
                 return console.log(err);
             }
             console.log("Results saved to a file.");
         });
         return avg;
-    }, 2000)
+    }, 5000)
 };
 
-exports.printDateAndTime = function(date) {
+exports.printDateAndTime = (date) => {
     return date.toLocaleString() + ":" + date.getUTCMilliseconds();
 };
 
-exports.printProgramInstructions = function() {
+exports.printProgramInstructions = () => {
     console.log("Press <q> to quit.");
     console.log("Press <c> if you detected a car.");
     console.log("Press <d> if you detected a fast car.");
@@ -45,7 +45,7 @@ exports.printProgramInstructions = function() {
     console.log("Fast means more than 40 kph. \n");
 };
 
-exports.printUserDetectionResults = function(results) {
+exports.printUserDetectionResults = (results) => {
     let str = "";
     for(let key in results) {
         if (!results.hasOwnProperty(key)) continue;
@@ -54,7 +54,7 @@ exports.printUserDetectionResults = function(results) {
     return str;
 };
 
-exports.getProperIntervalBetweenMeasurements = function(isSimulation) {
+exports.getProperIntervalBetweenMeasurements = (isSimulation) => {
     if(isSimulation) {
         return 15;
     } else {
@@ -62,11 +62,11 @@ exports.getProperIntervalBetweenMeasurements = function(isSimulation) {
     }
 };
 
-exports.takeThirdElementFromLine = function(element) {
+exports.takeThirdElementFromLine = (element) => {
     return element.split(" ")[2];
 };
 
-exports.checkIfNumber = function(element) {
+exports.checkIfNumber = (element) => {
     return !isNaN(element);
 };
 
