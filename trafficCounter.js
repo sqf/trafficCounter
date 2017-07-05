@@ -184,6 +184,9 @@ function count(isSimulation) {
             }
             isVehiclePassing = true;
         }
+        if(currentSignalStrength < theLowestSignalStrength && !isNaN(theLowestSignalStrength)) {
+            theLowestSignalStrength = currentSignalStrength;
+        }
         if(currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             if(!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
                 theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles)
@@ -207,7 +210,6 @@ function count(isSimulation) {
                     occupancy += timeOfPassing;
                 } else {
                     let wynik = currentSignalStrength - theLowestSignalStrength;
-                    let wynik2 = theLowestSignalStrength - currentSignalStrength;
                     fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, currentSignalStrength : ");
                     fs.appendFileSync(filePathAndNameDebug, currentSignalStrength);
                     fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, theLowestSignalStrength : ");
