@@ -30,11 +30,14 @@ program.on('--help', function() {
 
 if(program.calibrate) utils.calibrate(apName);
 if(program.count) count();
-if(typeof program.simulate === 'string' || program.simulate instanceof String) {
-    simulate(program.simulate);
-} else {
-    console.log("You must specify a path to log!");
+if(program.simulate) {
+    if(typeof program.simulate === 'string' || program.simulate instanceof String) {
+        simulate(program.simulate);
+    } else {
+        console.log("You must specify a path to log!");
+    }
 }
+
 
 function count(isSimulation) {
     utils.printProgramInstructions();
