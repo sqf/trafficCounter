@@ -7,7 +7,7 @@ exports.calibrate = (apName) => {
     let noVehicleValues = [];
     let fetchNoVehicleValues = setInterval(() => {
         let currentSignalStrength = getCurrentSignalStrength(apName);
-        console.log("currentSignalStrength", currentSignalStrength);
+        console.log("currentSignalStrength:", currentSignalStrength);
         noVehicleValues.push(currentSignalStrength)
     }, 50);
 
