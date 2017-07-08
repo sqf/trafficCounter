@@ -71,7 +71,22 @@ exports.checkIfNumber = (element) => {
 };
 
 function getWirelessInterfaceName() {
-    return execSync("ip link show | grep 3:").toString().split(" ")[1].slice(0, -1);
+    let wirelessInterfaceName;
+    try {
+        wirelessInterfaceName = fs.readFileSync("wirelessInterfaceName").toString();
+        console.log("Wireless interface read from a file: ", wirelessInterfaceName);
+        return wirelessInterfaceName;
+    }
+    catch (err) {
+        try {
+            wirelessInterfaceName = execSync("ip link show | grep 3:").toString().split(" ")[1].slice(0, -1);
+            return wirelessInterfaceName;
+        } catch (err) {
+            console.log("Automatic fetch of interface name failed. " +
+                "Please put the name to a file called 'wirelessInterfaceName' and try again.");
+            process.exit();
+        }
+    }
 }
 
 function getCurrentSignalStrength(apName) {

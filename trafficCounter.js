@@ -15,15 +15,6 @@ const minimumVehiclePassingTime = 250;
 const minimumRiseOfSignal = 3;
 const minimumDropOfSignal = 3;
 
-let wirelessInterfaceName;
-try {
-    wirelessInterfaceName = fs.readFileSync("wirelessInterfaceName");
-    console.log("Wireless interface read from a file: ", wirelessInterfaceName);
-}
-catch (err) {
-    wirelessInterfaceName = utils.getWirelessInterfaceName();
-}
-
 program
     .version('0.0.1')
     .option('-k, --calibrate', 'calibrate program')
@@ -35,7 +26,7 @@ program.on('--help', function () {
 })
     .parse(process.argv);
 
-if (program.calibrate) utils.calibrate(wirelessInterfaceName);
+if (program.calibrate) utils.calibrate(utils.getWirelessInterfaceName());
 if (program.count) count();
 if (program.simulate) {
     if (typeof program.simulate === 'string' || program.simulate instanceof String) {
@@ -46,6 +37,12 @@ if (program.simulate) {
 }
 
 function count(isSimulation) {
+    let wirelessInterfaceName;
+    if (!isSimulation) {
+        wirelessInterfaceName = utils.getWirelessInterfaceName();
+    } else {
+        wirelessInterfaceName = "dummyInterfaceName";
+    }
     utils.printProgramInstructions();
     let vehicleCounter = 0;
     let userDetectionResults = {
@@ -198,7 +195,6 @@ function count(isSimulation) {
         if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
             if (!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
                 theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles) {
-                fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie z lowSig: ");
                 theLowestSignalStrength = null;
                 isVehiclePassing = false;
             } else {
@@ -216,13 +212,6 @@ function count(isSimulation) {
                     theLowestSignalStrength = null;
                     occupancy += timeOfPassing;
                 } else {
-                    let wynik = currentSignalStrength - theLowestSignalStrength;
-                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, currentSignalStrength : ");
-                    fs.appendFileSync(filePathAndNameDebug, currentSignalStrength);
-                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, theLowestSignalStrength : ");
-                    fs.appendFileSync(filePathAndNameDebug, theLowestSignalStrength);
-                    fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie, wynik : ");
-                    fs.appendFileSync(filePathAndNameDebug, wynik);
                     isVehiclePassing = false;
                 }
             }
@@ -242,7 +231,7 @@ function simulate(pathToFile) {
     let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
 
     let getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
-    td.when(getCurrentSignalStrength(wirelessInterfaceName)).thenReturn.apply(null, rssiValues);
+    td.when(getCurrentSignalStrength("dummyInterfaceName")).thenReturn.apply(null, rssiValues);
 
     count(true);
 }
