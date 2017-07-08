@@ -16,11 +16,11 @@ const minimumRiseOfSignal = 3;
 const minimumDropOfSignal = 3;
 
 let wirelessInterfaceName;
-try{
+try {
     wirelessInterfaceName = fs.readFileSync("wirelessInterfaceName");
     console.log("Wireless interface read from a file: ", wirelessInterfaceName);
 }
-catch(err) {
+catch (err) {
     wirelessInterfaceName = utils.getWirelessInterfaceName();
 }
 
@@ -29,17 +29,16 @@ program
     .option('-k, --calibrate', 'calibrate program')
     .option('-c, --count', 'count vehicles')
     .option('-s, --simulate [pathToLog]', 'simulate counting');
-    //.option('-c, --cheese [type]', 'Add the specified type of cheese [marble]', 'marble')
-program.on('--help', function() {
+program.on('--help', function () {
     console.log("Run --calibrate when there are no vehicles.");
     console.log("It will take a few seconds to proceed.");
 })
     .parse(process.argv);
 
-if(program.calibrate) utils.calibrate(wirelessInterfaceName);
-if(program.count) count();
-if(program.simulate) {
-    if(typeof program.simulate === 'string' || program.simulate instanceof String) {
+if (program.calibrate) utils.calibrate(wirelessInterfaceName);
+if (program.count) count();
+if (program.simulate) {
+    if (typeof program.simulate === 'string' || program.simulate instanceof String) {
         simulate(program.simulate);
     } else {
         console.log("You must specify a path to log!");
@@ -69,7 +68,7 @@ function count(isSimulation) {
     let filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
     let filePathAndNameDebug = filePathAndName + " DEBUG";
     let initialInfo = "";
-    if(isSimulation) {
+    if (isSimulation) {
         initialInfo += "This is a simulation.\n"
     }
     initialInfo += "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
@@ -93,7 +92,7 @@ function count(isSimulation) {
     }
 
     process.stdin.on('keypress', (str, key) => {
-        switch(key.sequence) {
+        switch (key.sequence) {
             case "q":
                 handleQuitingProgram();
                 break;
@@ -171,41 +170,39 @@ function count(isSimulation) {
     let theLowestSignalStrength;
     let previousSignalStrength;
     let currentSignalStrength = 0;
-    setInterval(function()
-    {
+    setInterval(() => {
         let tNow = new Date();
         previousSignalStrength = Number(JSON.parse(JSON.stringify(currentSignalStrength)));
         currentSignalStrength = Number(utils.getCurrentSignalStrength(wirelessInterfaceName));
 
-        if(!currentSignalStrength) {
+        if (!currentSignalStrength) {
             handleQuitingProgram();
         }
 
         //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
 
-        if(checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow)) {
-            if(!isVehiclePassing) {
+        if (checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow)) {
+            if (!isVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
                 fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
-            if(currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
+            if (currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
                 theLowestSignalStrength = currentSignalStrength;
             }
             isVehiclePassing = true;
         }
-        if(currentSignalStrength < theLowestSignalStrength && !isNaN(theLowestSignalStrength)) {
+        if (currentSignalStrength < theLowestSignalStrength && !isNaN(theLowestSignalStrength)) {
             theLowestSignalStrength = currentSignalStrength;
         }
-        if(currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
-            if(!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
-                theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles)
-            {
+        if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
+            if (!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
+                theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles) {
                 fs.appendFileSync(filePathAndNameDebug, "zadzialo zabezpieczenie z lowSig: ");
                 theLowestSignalStrength = null;
                 isVehiclePassing = false;
             } else {
-                if(currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal ||
+                if (currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal ||
                     theLowestSignalStrength < signalStrengthWithoutNoise - thresholdForFastVehicles) {
                     vehicleCounter++;
                     let timeOfPassing = tNow - momentWhenVehicleAppeared;
@@ -230,7 +227,7 @@ function count(isSimulation) {
                 }
             }
         }
-        let totalProgramDuration =  tNow - whenProgramStarted;
+        let totalProgramDuration = tNow - whenProgramStarted;
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + totalProgramDuration + " " +
             currentSignalStrength + "\n");
     }, utils.getProperIntervalBetweenMeasurements(isSimulation));

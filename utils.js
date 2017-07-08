@@ -2,11 +2,11 @@
 const execSync = require('child_process').execSync;
 let fs = require('fs');
 
-exports.calibrate = (apName) => {
+exports.calibrate = (networkInterface) => {
     console.log("Calibration...");
     let noVehicleValues = [];
     let fetchNoVehicleValues = setInterval(() => {
-        let currentSignalStrength = getCurrentSignalStrength(apName);
+        let currentSignalStrength = getCurrentSignalStrength(networkInterface);
         console.log("currentSignalStrength:", currentSignalStrength);
         noVehicleValues.push(currentSignalStrength)
     }, 50);
@@ -17,7 +17,7 @@ exports.calibrate = (apName) => {
         let avg = (sum / noVehicleValues.length).toFixed();
         console.log("Calibration done. Average = ", avg);
         fs.writeFile("calibrationResult", avg, (err) => {
-            if(err) {
+            if (err) {
                 return console.log(err);
             }
             console.log("Results saved to a file.");
@@ -47,7 +47,7 @@ exports.printProgramInstructions = () => {
 
 exports.printUserDetectionResults = (results) => {
     let str = "";
-    for(let key in results) {
+    for (let key in results) {
         if (!results.hasOwnProperty(key)) continue;
         str = str + key + ": " + results[key] + "\n";
     }
@@ -55,7 +55,7 @@ exports.printUserDetectionResults = (results) => {
 };
 
 exports.getProperIntervalBetweenMeasurements = (isSimulation) => {
-    if(isSimulation) {
+    if (isSimulation) {
         return 15;
     } else {
         return 10;
