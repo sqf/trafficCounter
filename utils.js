@@ -1,6 +1,7 @@
 "use strict";
 const execSync = require('child_process').execSync;
-let fs = require('fs');
+const fs = require('fs');
+const sget = require('sget');
 
 exports.calibrate = (networkInterface) => {
     console.log("Calibration...");
@@ -71,17 +72,26 @@ exports.checkIfNumber = (element) => {
 };
 
 function getWirelessInterfaceName() {
-    let wirelessInterfaceName;
     try {
-        wirelessInterfaceName = fs.readFileSync("wirelessInterfaceName").toString();
-        console.log("Wireless interface read from a file: ", wirelessInterfaceName);
-        return wirelessInterfaceName;
+        let wirelessInterface = fs.readFileSync("wirelessInterfaceName").toString();
+        console.log("Wireless interface read from a file: ", wirelessInterface);
+        return wirelessInterface;
     }
     catch (err) {
         try {
-            wirelessInterfaceName = execSync("ip link show | grep 3:").toString().split(" ")[1].slice(0, -1);
-            return wirelessInterfaceName;
+            let wirelessInterfaces = execSync("ip link list").toString().split("\n");
+            wirelessInterfaces = wirelessInterfaces.filter((element) => {
+                return element.includes(": ");
+            }).map((element) => {
+                console.log(element.split(" ")[0] + " " + element.split(" ")[1].slice(0, -1));
+                return element.split(" ")[1].slice(0, -1);
+            });
+            console.log("Which network interface would you like to use?");
+            let index = JSON.parse(JSON.stringify(Number(sget()) - 1));
+            console.log("Interface " + wirelessInterfaces[index] + " will be used.");
+            return wirelessInterfaces[index];
         } catch (err) {
+            console.log(err);
             console.log("Automatic fetch of interface name failed. " +
                 "Please put the name to a file called 'wirelessInterfaceName' and try again.");
             process.exit();
