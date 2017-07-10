@@ -181,7 +181,8 @@ function count(isSimulation) {
         if (checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow)) {
             if (!isVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
-                fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
+                fs.appendFileSync(filePathAndNameDebug,
+                    utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
             if (currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
@@ -229,7 +230,6 @@ function simulate(pathToFile) {
     console.log("Read calibration value is ", calibrationValue);
     fs.writeFileSync("calibrationResult", calibrationValue);
     let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
-
     let getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
     td.when(getCurrentSignalStrength("dummyInterfaceName")).thenReturn.apply(null, rssiValues);
 
