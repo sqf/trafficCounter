@@ -11,7 +11,7 @@ let utils = require("./utils.js");
 const threshold = 6;
 const thresholdForFastVehicles = 10;
 const minimumTimePeriodBetweenPassingVehicles = 100;
-const minimumVehiclePassingTime = 250;
+const minimumVehiclePassingTime = 300;
 const minimumRiseOfSignal = 3;
 const minimumDropOfSignal = 3;
 
@@ -214,6 +214,7 @@ function count(isSimulation) {
                     occupancy += timeOfPassing;
                 } else {
                     isVehiclePassing = false;
+                    theLowestSignalStrength = null;
                 }
             }
         }
