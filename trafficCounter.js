@@ -199,8 +199,7 @@ function count(isSimulation) {
                 theLowestSignalStrength = null;
                 isVehiclePassing = false;
             } else {
-                if (currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal ||
-                    theLowestSignalStrength < signalStrengthWithoutNoise - thresholdForFastVehicles) {
+                if (currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal) {
                     vehicleCounter++;
                     let timeOfPassing = tNow - momentWhenVehicleAppeared;
                     let vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
