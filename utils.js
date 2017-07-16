@@ -7,9 +7,9 @@ exports.calibrate = (networkInterface) => {
     console.log("Calibration...");
     let noVehicleValues = [];
     let fetchNoVehicleValues = setInterval(() => {
-        let currentSignalStrength = getCurrentSignalStrength(networkInterface);
-        console.log("currentSignalStrength:", currentSignalStrength);
-        noVehicleValues.push(currentSignalStrength)
+        let currentRssi = getCurrentRssi(networkInterface);
+        console.log("currentRssi:", currentRssi);
+        noVehicleValues.push(currentRssi)
     }, 50);
 
     setTimeout(() => {
@@ -99,9 +99,9 @@ function getWirelessInterfaceName() {
     }
 }
 
-function getCurrentSignalStrength(apName) {
+function getCurrentRssi(apName) {
     return Number(execSync('./wifi-scan-station ' + apName).toString());
 }
 
-exports.getCurrentSignalStrength = getCurrentSignalStrength;
+exports.getCurrentRssi = getCurrentRssi;
 exports.getWirelessInterfaceName = getWirelessInterfaceName;

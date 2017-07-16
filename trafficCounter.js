@@ -58,9 +58,9 @@ function count(isSimulation) {
         "fast motorcycle": 0
     };
     let occupancy = 0; // total time
-    let isVehiclePassing = false;
+    let isItPossibleThatVehiclePassing = false;
 
-    let signalStrengthWithoutNoise = Number(fs.readFileSync("calibrationResult").toString());
+    let rssiWithoutVehicles = Number(fs.readFileSync("calibrationResult").toString());
     let whenProgramStarted = new Date();
     let filePathAndName = "results/" + utils.printDateAndTime(whenProgramStarted).replace(/:/g, "_");
     let filePathAndNameDebug = filePathAndName + " DEBUG";
@@ -70,7 +70,7 @@ function count(isSimulation) {
     }
     initialInfo += "Counting started at " + utils.printDateAndTime(whenProgramStarted) +
         "\nCalibration value (average no vehicle signal strength) is " +
-        signalStrengthWithoutNoise + " dBm" + "\nThreshold value is " + threshold + " dBm" +
+        rssiWithoutVehicles + " dBm" + "\nThreshold value is " + threshold + " dBm" +
         "\nThreshold for fast vehicles is " + thresholdForFastVehicles + " dBm" +
         "\nMinimum period between passing vehicles: " + minimumTimePeriodBetweenPassingVehicles + " ms" +
         "\nMinimum vehicle passing time: " + minimumVehiclePassingTime + " ms" +
@@ -151,10 +151,10 @@ function count(isSimulation) {
         process.exit();
     }
 
-    function checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow) {
-        return currentSignalStrength <= signalStrengthWithoutNoise - threshold &&
+    function checkIsItPossibleThatVehicleIsPassing(currentRssi, previousRssi, tNow) {
+        return currentRssi <= rssiWithoutVehicles - threshold &&
             tNow - momentWhenVehiclePassed > minimumTimePeriodBetweenPassingVehicles &&
-            previousSignalStrength - currentSignalStrength > minimumDropOfSignal;
+            previousRssi - currentRssi > minimumDropOfSignal;
     }
 
     function checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) {
@@ -164,62 +164,62 @@ function count(isSimulation) {
     // Below value is initialized with time when program started to allow count a first vehicle.
     let momentWhenVehiclePassed = whenProgramStarted;
     let momentWhenVehicleAppeared;
-    let theLowestSignalStrength;
-    let previousSignalStrength;
-    let currentSignalStrength = 0;
+    let theLowestRssi;
+    let previousRssi;
+    let currentRssi = 0;
     setInterval(() => {
         let tNow = new Date();
-        previousSignalStrength = Number(JSON.parse(JSON.stringify(currentSignalStrength)));
-        currentSignalStrength = Number(utils.getCurrentSignalStrength(wirelessInterfaceName));
+        previousRssi = Number(JSON.parse(JSON.stringify(currentRssi)));
+        currentRssi = Number(utils.getCurrentRssi(wirelessInterfaceName));
 
-        if (!currentSignalStrength) {
+        if (!currentRssi) {
             handleQuitingProgram();
         }
 
-        //console.log("aaaa currentSignalStrength", currentSignalStrength.toString());
+        //console.log("aaaa currentRssi", currentRssi.toString());
 
-        if (checkIsItPossibleThatVehicleIsPassing(currentSignalStrength, previousSignalStrength, tNow)) {
-            if (!isVehiclePassing) {
+        if (checkIsItPossibleThatVehicleIsPassing(currentRssi, previousRssi, tNow)) {
+            if (!isItPossibleThatVehiclePassing) {
                 momentWhenVehicleAppeared = tNow;
                 fs.appendFileSync(filePathAndNameDebug,
                     utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
                 console.log(utils.printDateAndTime(momentWhenVehicleAppeared) + " Vehicle is passing!");
             }
-            if (currentSignalStrength < theLowestSignalStrength || isNaN(theLowestSignalStrength)) {
-                theLowestSignalStrength = currentSignalStrength;
+            if (currentRssi < theLowestRssi || isNaN(theLowestRssi)) {
+                theLowestRssi = currentRssi;
             }
-            isVehiclePassing = true;
+            isItPossibleThatVehiclePassing = true;
         }
-        if (currentSignalStrength < theLowestSignalStrength && !isNaN(theLowestSignalStrength)) {
-            theLowestSignalStrength = currentSignalStrength;
+        if (currentRssi < theLowestRssi && !isNaN(theLowestRssi)) {
+            theLowestRssi = currentRssi;
         }
-        if (currentSignalStrength > signalStrengthWithoutNoise - threshold && isVehiclePassing === true) {
+        if (currentRssi > rssiWithoutVehicles - threshold && isItPossibleThatVehiclePassing === true) {
             if (!checkMinimumTimeOfPassingRule(tNow, momentWhenVehicleAppeared, minimumVehiclePassingTime) &&
-                theLowestSignalStrength > signalStrengthWithoutNoise - thresholdForFastVehicles) {
-                theLowestSignalStrength = null;
-                isVehiclePassing = false;
+                theLowestRssi > rssiWithoutVehicles - thresholdForFastVehicles) {
+                theLowestRssi = null;
+                isItPossibleThatVehiclePassing = false;
             } else {
-                if (currentSignalStrength - theLowestSignalStrength > minimumRiseOfSignal) {
+                if (currentRssi - theLowestRssi > minimumRiseOfSignal) {
                     vehicleCounter++;
                     let timeOfPassing = tNow - momentWhenVehicleAppeared;
                     let vehicleInfo = utils.printDateAndTime(tNow) + " Vehicle passed!" +
                         " Time of passing: " + timeOfPassing + " ms. The lowest signal strength: " +
-                        theLowestSignalStrength + "\n";
+                        theLowestRssi + "\n";
                     fs.appendFileSync(filePathAndName, vehicleInfo);
                     fs.appendFileSync(filePathAndNameDebug, vehicleInfo);
                     console.log(vehicleInfo + "Vehicle counter: " + vehicleCounter + "\n");
-                    isVehiclePassing = false;
-                    theLowestSignalStrength = null;
+                    isItPossibleThatVehiclePassing = false;
+                    theLowestRssi = null;
                     occupancy += timeOfPassing;
                 } else {
-                    isVehiclePassing = false;
-                    theLowestSignalStrength = null;
+                    isItPossibleThatVehiclePassing = false;
+                    theLowestRssi = null;
                 }
             }
         }
         let totalProgramDuration = tNow - whenProgramStarted;
         fs.appendFileSync(filePathAndNameDebug, utils.printDateAndTime(tNow) + " " + totalProgramDuration + " " +
-            currentSignalStrength + "\n");
+            currentRssi + "\n");
     }, utils.getProperIntervalBetweenMeasurements(isSimulation));
 }
 
@@ -230,7 +230,7 @@ function simulate(pathToFile) {
     console.log("Read calibration value is ", calibrationValue);
     fs.writeFileSync("calibrationResult", calibrationValue);
     let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
-    let getCurrentSignalStrength = td.replace(utils, "getCurrentSignalStrength");
+    let getCurrentSignalStrength = td.replace(utils, "getCurrentRssi");
     td.when(getCurrentSignalStrength("dummyInterfaceName")).thenReturn.apply(null, rssiValues);
 
     count(true);
