@@ -10,7 +10,7 @@ let utils = require("./utils.js");
 // Configuration
 const threshold = 6;
 const thresholdForFastVehicles = 10;
-const minimumTimePeriodBetweenPassingVehicles = 100;
+const minimumTimePeriodBetweenPassingVehicles = 0;
 const minimumVehiclePassingTime = 300;
 const minimumRiseOfSignal = 3;
 const minimumDropOfSignal = 3;
@@ -230,8 +230,8 @@ function simulate(pathToFile) {
     console.log("Read calibration value is ", calibrationValue);
     fs.writeFileSync("calibrationResult", calibrationValue);
     let rssiValues = linesFromLog.map(utils.takeThirdElementFromLine).filter(utils.checkIfNumber);
-    let getCurrentSignalStrength = td.replace(utils, "getCurrentRssi");
-    td.when(getCurrentSignalStrength("dummyInterfaceName")).thenReturn.apply(null, rssiValues);
+    let getCurrentRssi = td.replace(utils, "getCurrentRssi");
+    td.when(getCurrentRssi("dummyInterfaceName")).thenReturn.apply(null, rssiValues);
 
     count(true);
 }
